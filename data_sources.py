@@ -28,6 +28,25 @@ class YahooSource:
         except Exception:
             return None
 
+    def volume(self, ticker):
+        h = self._yf.Ticker(ticker).history(period="3mo")
+        return h["Volume"]
+
+    def news(self, ticker):
+        """Recent headlines as [{'title', 'publisher'}]; handles both yfinance news layouts."""
+        try:
+            items = self._yf.Ticker(ticker).news or []
+        except Exception:
+            return []
+        out = []
+        for it in items:
+            c = it.get("content", it)
+            title = c.get("title")
+            pub = (c.get("provider") or {}).get("displayName") or c.get("publisher") or ""
+            if title:
+                out.append({"title": title, "publisher": pub})
+        return out
+
 
 class DemoSource:
     """Random-walk prices seeded by ticker, so results are stable between runs."""
@@ -48,3 +67,12 @@ class DemoSource:
 
     def quarterly_income(self, ticker):
         return None
+
+    def volume(self, ticker):
+        idx = pd.bdate_range(end=pd.Timestamp.today().normalize(), periods=60)
+        v = pd.Series(self._rng(ticker + "v").integers(900_000, 1_100_000, len(idx)), index=idx)
+        v.iloc[-1] *= 2  # exercise the volume-spike path
+        return v
+
+    def news(self, ticker):
+        return [{"title": f"{ticker} demo headline: analysts update outlook", "publisher": "Demo Wire"}]

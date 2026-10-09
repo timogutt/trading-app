@@ -27,6 +27,15 @@ class TickerReport:
     quarters: list[QuarterStats] = field(default_factory=list)
     summary: str = ""
     error: str | None = None
+    price: float | None = None
+    ma52: float | None = None     # 52-week (252 trading days) simple moving average
+    high52: float | None = None
+    low52: float | None = None
+
+    @property
+    def vs_ma52(self) -> float | None:
+        """Current price relative to the 52-week moving average (fraction)."""
+        return self.price / self.ma52 - 1 if self.price and self.ma52 else None
 
     @property
     def avg_return(self) -> float | None:
@@ -63,6 +72,17 @@ def q4_stats(prices: pd.Series, years: list[int]) -> list[QuarterStats]:
     return out
 
 
+def ma_stats(prices: pd.Series, window: int = 252) -> dict:
+    """Latest price, `window`-day SMA, and 52w high/low. SMA is None with too little history."""
+    prices = prices.dropna()
+    if prices.empty:
+        return {}
+    tail = prices.iloc[-window:]
+    return {"price": float(prices.iloc[-1]),
+            "ma52": float(tail.mean()) if len(prices) >= window else None,
+            "high52": float(tail.max()), "low52": float(tail.min())}
+
+
 def q4_revenue_growth(quarterly_income: pd.DataFrame | None, years: list[int]) -> dict[int, float]:
     """Q4 revenue YoY growth keyed by year, from a yfinance quarterly income statement
     (columns = quarter-end dates). Only Dec quarter-ends are used, so non-calendar fiscal
@@ -90,6 +110,10 @@ def summarize(r: TickerReport) -> str:
     parts = [f"{r.ticker} rose in {wins} of {n} recent Q4s (avg {r.avg_return:+.1%}).",
              f"Best: Q4 {best.year} ({best.ret:+.1%}); worst: Q4 {worst.year} ({worst.ret:+.1%})."]
     parts.append(f"Volatility ~{avg_vol:.0%} annualised, typical in-quarter drawdown {avg_dd:.1%}.")
+    if r.vs_ma52 is not None:
+        side = "above" if r.vs_ma52 >= 0 else "below"
+        parts.append(f"Trades {abs(r.vs_ma52):.1%} {side} its 52-week moving average "
+                     f"({r.ma52:,.2f}; {'uptrend' if r.vs_ma52 >= 0 else 'downtrend'}).")
     growth = [q.revenue_yoy for q in r.quarters if q.revenue_yoy is not None]
     if growth:
         parts.append(f"Q4 revenue growth averaged {np.mean(growth):+.1%} YoY.")
@@ -108,8 +132,12 @@ def analyse(ticker: str, years: list[int], source) -> TickerReport:
         info = source.info(ticker)
         report = TickerReport(ticker, info.get("shortName") or info.get("longName") or ticker,
                               categorize(ticker, info))
-        prices = source.history(ticker, dt.date(years[0] - 1, 9, 1), dt.date(years[-1], 12, 31))
+        # fetch through today (not just the last Q4) so the 52-week MA reflects the current price
+        start = min(dt.date(years[0] - 1, 9, 1), dt.date.today() - dt.timedelta(days=420))
+        prices = source.history(ticker, start, dt.date.today())
         report.quarters = q4_stats(prices, years)
+        for k, v in ma_stats(prices).items():
+            setattr(report, k, v)
         growth = q4_revenue_growth(source.quarterly_income(ticker), years)
         for q in report.quarters:
             q.revenue_yoy = growth.get(q.year)

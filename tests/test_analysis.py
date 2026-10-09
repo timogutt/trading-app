@@ -45,3 +45,12 @@ def test_analyse_demo_and_error():
     class Broken(DemoSource):
         def history(self, *a): raise ValueError("No price data")
     assert analyse("ZZZZ", [2024], Broken()).error
+
+
+def test_ma_stats():
+    import numpy as np
+    from analysis import ma_stats
+    s = pd.Series(np.arange(1.0, 301.0), index=pd.bdate_range("2024-01-01", periods=300))
+    m = ma_stats(s)
+    assert m["price"] == 300 and m["ma52"] == s.iloc[-252:].mean() and m["high52"] == 300 and m["low52"] == 49
+    assert ma_stats(s.iloc[:100])["ma52"] is None
