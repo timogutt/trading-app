@@ -71,7 +71,12 @@
       "WMT",
       "AVGO",
       "LLY",
-      "BRK-B"
+      "BRK-B",
+      "GOOGL",
+      "TSLA",
+      "MSFT",
+      "AMZN",
+      "0700.HK"
     ],
     "Mid-big cap": [
       "AXON",
@@ -85,7 +90,8 @@
       "NET",
       "DDOG",
       "SNOW",
-      "BABA"
+      "BABA",
+      "MRNA"
     ],
     "Upcoming sector": [
       "LUNR",
@@ -98,14 +104,17 @@
       "ASTS",
       "IRDM",
       "MBLY",
-      "TEM"
+      "TEM",
+      "GENI"
     ]
   },
   "tickers": [
+    "0700.HK",
     "AAPL",
     "AIR.PA",
     "ALV.DE",
     "AMD",
+    "AMZN",
     "ANET",
     "ASML",
     "ASTS",
@@ -128,6 +137,8 @@
     "ETH-USD",
     "EXSA.DE",
     "GC=F",
+    "GENI",
+    "GOOGL",
     "HG=F",
     "HOOD",
     "INTU",
@@ -147,6 +158,8 @@
     "MC.PA",
     "MELI",
     "META",
+    "MRNA",
+    "MSFT",
     "MU",
     "NET",
     "NG=F",
@@ -171,6 +184,7 @@
     "SOL-USD",
     "SU.PA",
     "TEM",
+    "TSLA",
     "TSM",
     "UBER",
     "URA",
