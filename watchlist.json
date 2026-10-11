@@ -1,4 +1,91 @@
 {
-  "_note": "Add tickers to this list as you go. Everything in reports.py reads from here.",
-  "tickers": []
+  "_note": "Add tickers as you go. Yahoo Finance symbols. Groups mirror your TradingView lists (informational).",
+  "groups": {
+    "Ai": [
+      "CRWV",
+      "SLNH",
+      "SNDK",
+      "MU",
+      "CBRS",
+      "CRDO",
+      "TSM",
+      "ANET",
+      "ASML",
+      "VRT",
+      "INTU"
+    ],
+    "Commodities": [
+      "GC=F",
+      "SI=F",
+      "HG=F",
+      "NG=F",
+      "URA",
+      "COPX"
+    ],
+    "Crypto": [
+      "BTC-USD",
+      "ETH-USD",
+      "SOL-USD"
+    ],
+    "Energy": [
+      "XOM",
+      "EQT",
+      "BE",
+      "NLR",
+      "OKLO",
+      "LEU",
+      "CEG"
+    ],
+    "Etf": [
+      "SMH",
+      "QQQ",
+      "MAGS",
+      "^GSPC",
+      "VWCE.DE",
+      "IS3N.DE",
+      "EXSA.DE",
+      "IUSN.DE",
+      "ZPRV.DE",
+      "XDWH.DE"
+    ]
+  },
+  "tickers": [
+    "CRWV",
+    "SLNH",
+    "SNDK",
+    "MU",
+    "CBRS",
+    "CRDO",
+    "TSM",
+    "ANET",
+    "ASML",
+    "VRT",
+    "INTU",
+    "GC=F",
+    "SI=F",
+    "HG=F",
+    "NG=F",
+    "URA",
+    "COPX",
+    "BTC-USD",
+    "ETH-USD",
+    "SOL-USD",
+    "XOM",
+    "EQT",
+    "BE",
+    "NLR",
+    "OKLO",
+    "LEU",
+    "CEG",
+    "SMH",
+    "QQQ",
+    "MAGS",
+    "^GSPC",
+    "VWCE.DE",
+    "IS3N.DE",
+    "EXSA.DE",
+    "IUSN.DE",
+    "ZPRV.DE",
+    "XDWH.DE"
+  ]
 }
