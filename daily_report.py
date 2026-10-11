@@ -128,11 +128,15 @@ def render_text(lines: list[Line], today: dt.date | None = None) -> str:
 
 
 def send_email(body: str, subject: str) -> None:
+    missing = [k for k in ("SMTP_HOST", "SMTP_USER", "SMTP_PASS") if not os.environ.get(k)]
+    if missing:
+        raise SystemExit("Email not sent - add these as GitHub repository secrets (Settings > Secrets and "
+                         "variables > Actions): " + ", ".join(missing))
     user = os.environ["SMTP_USER"]
     msg = EmailMessage()
-    msg["Subject"], msg["From"], msg["To"] = subject, user, os.environ.get("REPORT_TO", user)
+    msg["Subject"], msg["From"], msg["To"] = subject, user, os.environ.get("REPORT_TO") or user
     msg.set_content(body)
-    with smtplib.SMTP(os.environ["SMTP_HOST"], int(os.environ.get("SMTP_PORT", 587))) as s:
+    with smtplib.SMTP(os.environ["SMTP_HOST"], int(os.environ.get("SMTP_PORT") or 587)) as s:
         s.starttls()
         s.login(user, os.environ["SMTP_PASS"])
         s.send_message(msg)
