@@ -1,0 +1,35 @@
+name: Watchlist reports
+on:
+  schedule:
+    - cron: "0 11 * * 1"      # Monday 11:00 UTC: weekend news + earnings this week + money flows
+    - cron: "30 21 * * 5"     # Friday 21:30 UTC: week in review
+    - cron: "0 12 1 * *"      # 1st of the month: top picks
+  workflow_dispatch:
+    inputs:
+      kind: { description: "monday-all | monday | earnings | flows | picks | friday", default: "monday-all" }
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - name: Pick report kind
+        run: |
+          case "${{ github.event.schedule }}" in
+            "0 11 * * 1") K=monday-all ;;
+            "30 21 * * 5") K=friday ;;
+            "0 12 1 * *") K=picks ;;
+            *) K="${{ github.event.inputs.kind }}" ;;
+          esac
+          echo "KIND=$K" >> "$GITHUB_ENV"
+      - run: python reports.py "$KIND" --send
+        env:
+          WATCHLIST: ${{ vars.WATCHLIST }}
+          POLITICIAN_TRADES_URL: ${{ secrets.POLITICIAN_TRADES_URL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          REPORT_TO: ${{ secrets.REPORT_TO }}

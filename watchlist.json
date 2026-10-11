@@ -1,0 +1,4 @@
+{
+  "_note": "Add tickers to this list as you go. Everything in reports.py reads from here.",
+  "tickers": []
+}
