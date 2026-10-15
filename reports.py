@@ -13,6 +13,7 @@ import argparse
 import datetime as dt
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 from statistics import mean
 
 import numpy as np
@@ -21,6 +22,7 @@ import pandas as pd
 from analysis import ma_stats
 from daily_report import day_change, send_email
 from data_sources import DemoSource, YahooSource
+from universe import candidates
 
 BENCH = "SPY"
 
@@ -283,13 +285,15 @@ def report_flows(tickers, src):
 
 
 # ---------- picks: monthly, 3 horizons, ranked by risk ----------
-def metrics(src, t):
+def metrics(src, t, full=True):
+    """full=False skips the slow earnings/insider calls (used to pre-screen outside candidates)."""
     p = prices_for(src, t)
     r = p.pct_change().dropna()
     st = ma_stats(p)
-    hist = earnings_history(src, t)
-    sur = [h["sur"] for h in hist if pd.notna(h["sur"])]
-    buy, sell, _ = insider_summary(src.insiders(t))
+    sur, buy, sell = [], 0, 0
+    if full:
+        sur = [h["sur"] for h in earnings_history(src, t) if pd.notna(h["sur"])]
+        buy, sell, _ = insider_summary(src.insiders(t))
     return {"t": t, "m1": ret_over(p, 21) or 0, "m6": ret_over(p, 126) or 0, "y1": ret_over(p, 252) or 0,
             "vol": float(r.tail(252).std() * np.sqrt(252)), "dd": float((p.tail(252) / p.tail(252).cummax() - 1).min()),
             "vs_ma": (st["price"] / st["ma52"] - 1) if st.get("ma52") else 0, "sur": mean(sur) if sur else 0,
@@ -303,14 +307,31 @@ SCORES = {
 }
 
 
+SHORTLIST = 6  # outside candidates kept per horizon after the cheap price-only screen
+
+
+def _safe(fn, *a, **k):
+    try:
+        return fn(*a, **k)
+    except Exception:
+        return None
+
+
 def report_picks(tickers, src):
     out = header("Monthly top picks")
-    ms = []
-    for t in tickers:
-        try:
-            ms.append(metrics(src, t))
-        except Exception:
-            pass
+    wl = set(tickers)
+    ms = [m for m in map(lambda t: _safe(metrics, src, t), tickers) if m]
+    scope_all = os.environ.get("PICKS_SCOPE", "all") != "watchlist"
+    n_out = 0
+    if scope_all:
+        extra = candidates(src, tickers)
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            cheap = [m for m in ex.map(lambda t: _safe(metrics, src, t, False), extra) if m]
+        short = {m["t"] for f in SCORES.values() for m in sorted(cheap, key=f, reverse=True)[:SHORTLIST]}
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            full = [m for m in ex.map(lambda t: _safe(metrics, src, t), sorted(short)) if m]
+        ms += full
+        n_out = len(cheap)
     if not ms:
         return "\n".join(out + ["Not enough data (is the watchlist empty?)."]) + DISCLAIMER
     picks = []
@@ -318,12 +339,15 @@ def report_picks(tickers, src):
         m = max(ms, key=f)
         risk = m["vol"] * 0.6 + abs(m["dd"]) * 0.4
         picks.append((risk, horizon, m))
-    out += ["Ranked from MOST to LEAST risky (risk = volatility + max drawdown over 1y):", ""]
+    out += [f"Scanned {len(tickers)} watchlist names" + (f" + {n_out} outside candidates (broad universe & Yahoo screeners)" if scope_all else " (watchlist only)") + ".",
+            "Ranked from MOST to LEAST risky (risk = volatility + max drawdown over 1y):", ""]
     for i, (risk, horizon, m) in enumerate(sorted(picks, key=lambda x: -x[0]), 1):
-        out.append(f"{i}. **{horizon}: {m['t']}** (risk score {risk:.2f}) - 1m {pct(m['m1'])}, 6m {pct(m['m6'])}, 1y {pct(m['y1'])}, "
+        tag = "" if m["t"] in wl else " - NEW, not in your watchlist"
+        out.append(f"{i}. **{horizon}: {m['t']}**{tag} (risk score {risk:.2f}) - 1m {pct(m['m1'])}, 6m {pct(m['m6'])}, 1y {pct(m['y1'])}, "
                    f"vs 52w MA {pct(m['vs_ma'])}, vol {m['vol']:.0%}, max drawdown {pct(m['dd'])}, avg EPS surprise {m['sur']:+.1f}%.")
-    out += ["", "Picks are chosen only from your watchlist using momentum, trend, earnings surprises and insider flow. "
-            "Short-term favours momentum, mid-term earnings quality + 6-12m trend, long-term trend with low volatility."]
+    out += ["", "Picks come from your watchlist plus a broad universe, using momentum, trend, earnings surprises and insider flow. "
+            "Short-term favours momentum, mid-term earnings quality + 6-12m trend, long-term trend with low volatility. "
+            "Set PICKS_SCOPE=watchlist to restrict to your own list."]
     return "\n".join(out) + DISCLAIMER
 
 

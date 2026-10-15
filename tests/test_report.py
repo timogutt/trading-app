@@ -25,3 +25,13 @@ def test_report_demo_and_bad_ticker():
     lines = build_lines([Holding("AAPL", 10, 100), Holding("BAD")], Flaky())
     text = render_text(lines)
     assert "AAPL" in text and "Could not fetch data" in text
+
+
+def test_picks_can_include_outside_watchlist(monkeypatch):
+    from reports import DemoWatch, report_picks
+    monkeypatch.delenv("PICKS_SCOPE", raising=False)
+    text = report_picks(["AAPL"], DemoWatch())
+    assert "outside candidates" in text
+    monkeypatch.setenv("PICKS_SCOPE", "watchlist")
+    text = report_picks(["AAPL"], DemoWatch())
+    assert "NEW, not in your watchlist" not in text and "watchlist only" in text
