@@ -23,7 +23,7 @@ jobs:
             "0 12 1 * *") K=picks ;;
             *) K="${{ github.event.inputs.kind }}" ;;
           esac
-          echo "KIND=$K" >> "$GITHUB_ENV"
+          echo "KIND=$(echo "$K" | xargs)" >> "$GITHUB_ENV"
       - run: python reports.py "$KIND" --send
         env:
           WATCHLIST: ${{ vars.WATCHLIST }}

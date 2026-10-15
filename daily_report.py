@@ -45,6 +45,9 @@ class Line:
 
 def load_holdings(path: str | None) -> list[Holding]:
     raw = os.environ.get("PORTFOLIO_JSON")
+    if not raw and not (path and os.path.exists(path)):
+        raise SystemExit("No holdings found: set the PORTFOLIO_JSON secret/env var or create "
+                         f"{path or 'portfolio.json'} (see portfolio.example.json).")
     data = json.loads(raw) if raw else json.load(open(path))
     return [Holding(d["ticker"].upper(), d.get("shares", 0), d.get("cost")) for d in data]
 

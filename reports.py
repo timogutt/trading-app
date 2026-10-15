@@ -368,7 +368,7 @@ REPORTS = {"monday": report_monday, "earnings": report_earnings, "flows": report
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("kind", choices=list(REPORTS) + ["monday-all"])
+    ap.add_argument("kind", type=str.strip, choices=list(REPORTS) + ["monday-all"])  # strip: manual-dispatch input may carry a trailing space
     ap.add_argument("--watchlist", default="watchlist.json")
     ap.add_argument("--demo", action="store_true")
     ap.add_argument("--send", action="store_true")
