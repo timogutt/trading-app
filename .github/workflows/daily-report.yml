@@ -1,7 +1,8 @@
 name: Daily portfolio report
 on:
-  schedule:
-    - cron: "30 21 * * 1-5"   # 21:30 UTC, after the US close (adjust for your timezone)
+  # PAUSED: nightly schedule disabled. To re-enable, uncomment the 2 lines below.
+  # schedule:
+  #   - cron: "30 21 * * 1-5"   # 21:30 UTC, after the US close (adjust for your timezone)
   workflow_dispatch:
 jobs:
   report:
